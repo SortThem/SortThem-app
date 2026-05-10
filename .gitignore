@@ -1,54 +1,36 @@
-# C++ objects and libs
-*.slo
-*.lo
-*.o
-*.a
-*.la
-*.lai
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
 *.so
-*.so.*
-*.dll
-*.dylib
-
-# Qt-es
-object_script.*.Release
-object_script.*.Debug
-*_plugin_import.cpp
-/.qmake.cache
-/.qmake.stash
-*.pro.user
-*.pro.user.*
-*.qbs.user
-*.qbs.user.*
-*.moc
-moc_*.cpp
-moc_*.h
-qrc_*.cpp
-ui_*.h
-*.qmlc
-*.jsc
-Makefile*
-*build-*
-*.qm
-*.prl
-
-# Qt unit tests
-target_wrapper.*
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
 
 # QtCreator
-*.autosave
+*.user
+*.user.*
+*.qsp.user
+*.pyproj.user
 
-# QtCreator Qml
-*.qmlproject.user
-*.qmlproject.user.*
+# Config files with user data
+config.ini
+*.log
 
-# QtCreator CMake
-CMakeLists.txt.user*
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 
-# QtCreator 4.8< compilation database
-compile_commands.json
+# OS
+.DS_Store
+Thumbs.db
 
-# QtCreator local machine specific files for imported projects
-*creator.user*
 
-*_qmlcache.qrc
+# ignore images during test in development
+*.jpg
