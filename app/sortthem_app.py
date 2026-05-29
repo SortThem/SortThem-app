@@ -106,6 +106,44 @@ class SortThemApp:
         pygame.display.set_caption(title)
         logger.debug(f"Window title updated: {title}")
 
+    def draw_help_text(self):
+        """Draw help text at the top of the screen"""
+        help_lines = [
+            "ESC: Exit  |  BACKSPACE: Move back to current directory  |  ← →: Navigate  |  Press assigned letter: Move to subdirectory"
+        ]
+
+        y_offset = 10
+        for line in help_lines:
+            text = self.small_font.render(line, True, (255, 255, 255))
+            text_rect = text.get_rect()
+            text_rect.centerx = self.screen_width // 2
+            text_rect.top = y_offset
+
+            # Add semi-transparent background
+            bg_rect = text_rect.inflate(20, 8)
+            overlay = pygame.Surface(bg_rect.size, pygame.SRCALPHA)
+            overlay.fill((0, 0, 0, 180))
+            self.screen.blit(overlay, bg_rect)
+
+            self.screen.blit(text, text_rect)
+            y_offset += 28
+
+    def draw_instruction_below_keyboard(self):
+        """Draw instruction text below the keyboard"""
+        instruction_text = "Click or press letter key to move image into assigned subdirectory"
+        text = self.small_font.render(instruction_text, True, (200, 200, 200))
+        text_rect = text.get_rect()
+        text_rect.centerx = self.screen_width // 2
+        text_rect.bottom = self.screen_height - 10
+
+        # Add semi-transparent background
+        bg_rect = text_rect.inflate(20, 8)
+        overlay = pygame.Surface(bg_rect.size, pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 180))
+        self.screen.blit(overlay, bg_rect)
+
+        self.screen.blit(text, text_rect)
+
     def handle_letter_action(self, letter: str, dir_name: str):
         """Handle letter button action (bind directory and move image)"""
         logger.info(f"Processing letter action: '{letter}' -> directory '{dir_name}'")
@@ -278,6 +316,7 @@ class SortThemApp:
             # Draw everything
             self.screen.fill((0, 0, 0))
 
+            # Draw image or "no images" message
             if self.image_list.is_empty():
                 text = self.font.render("No images found in the current directory",
                                        True, (255, 255, 255))
@@ -286,33 +325,33 @@ class SortThemApp:
             elif self.image_viewer:
                 self.image_viewer.draw()
 
-            # Draw UI elements (only in viewing mode or always?)
+            # Draw help text at top
+            self.draw_help_text()
+
+            # Draw image counter (top left, below help text)
             if not self.image_list.is_empty():
                 counter_text = self.small_font.render(self.image_list.get_index_info(),
                                                      True, (255, 255, 255))
                 counter_rect = counter_text.get_rect()
-                counter_rect.topleft = (10, 10)
+                counter_rect.topleft = (10, 45)  # Moved down to not overlap help text
                 bg_rect = counter_rect.inflate(20, 10)
                 overlay = pygame.Surface(bg_rect.size, pygame.SRCALPHA)
                 overlay.fill((0, 0, 0, 180))
                 self.screen.blit(overlay, bg_rect)
                 self.screen.blit(counter_text, counter_rect)
 
-                backspace_text = self.small_font.render("BACKSPACE: Move image back to current directory",
-                                                       True, (255, 255, 255))
-                backspace_rect = backspace_text.get_rect()
-                backspace_rect.bottomright = (self.screen_width - 10, self.screen_height - 10)
-                self.screen.blit(backspace_text, backspace_rect)
-
-            # Always draw button panel (it may be partially dimmed if dialog is active)
+            # Draw button panel (keyboard at bottom)
             self.button_panel.draw()
+
+            # Draw instruction below keyboard
+            self.draw_instruction_below_keyboard()
+
+            # Draw message manager (temporary messages)
+            self.message_manager.draw()
 
             # Draw dialog on top if active
             if self.dialog.is_active():
                 self.dialog.draw()
-
-            # Draw message on top of everything
-            self.message_manager.draw()
 
             pygame.display.flip()
             self.clock.tick(60)
