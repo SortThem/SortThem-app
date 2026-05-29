@@ -50,7 +50,8 @@ class SortThemApp:
                 (self.screen_width, self.screen_height)
             )
 
-        pygame.display.set_caption("SortThem - Image Organizer")
+        # Set initial window title (will be updated after loading images)
+        pygame.display.set_caption("SortThem! - get order in your image collection - Loading...")
         logger.info(f"Display initialized: {self.screen_width}x{self.screen_height}")
 
         # Initialize fonts
@@ -86,10 +87,24 @@ class SortThemApp:
         if current_image and current_image.exists():
             self.image_viewer = ImageViewer(self.screen, str(current_image))
             self.button_panel.update_pressed_state(current_image, self.image_list.base_directory)
+            self.update_window_title()
         else:
             self.image_viewer = None
             if not self.image_list.is_empty():
                 logger.warning(f"Could not load image: {current_image}")
+            self.update_window_title()
+
+    def update_window_title(self):
+        """Update window title with current image filename"""
+        current_image = self.image_list.get_current_image()
+        if current_image and not self.image_list.is_empty():
+            filename = current_image.name
+            title = f"SortThem! - get order in your image collection - {filename}"
+        else:
+            title = "SortThem! - get order in your image collection - No images"
+
+        pygame.display.set_caption(title)
+        logger.debug(f"Window title updated: {title}")
 
     def handle_letter_action(self, letter: str, dir_name: str):
         """Handle letter button action (bind directory and move image)"""
@@ -127,16 +142,19 @@ class SortThemApp:
             new_image = self.image_list.previous_image()
             if new_image:
                 self.load_current_image()
+                self.update_window_title()
 
         elif event.key == pygame.K_RIGHT:
             new_image = self.image_list.next_image()
             if new_image:
                 self.load_current_image()
+                self.update_window_title()
 
         elif event.key == pygame.K_BACKSPACE:
             logger.info("Backspace pressed, moving image back")
             if self.image_list.move_current_image_back():
                 self.load_current_image()
+                self.update_window_title()
                 self.message_manager.show("Moved back to current directory")
             else:
                 self.message_manager.show("Image already in current directory")
@@ -149,6 +167,7 @@ class SortThemApp:
             if directory:
                 if self.image_viewer and self.image_list.move_current_image_to_subdir(directory):
                     self.load_current_image()
+                    self.update_window_title()
                     self.message_manager.show(f"Moved to '{directory}'")
                 elif self.image_list.is_empty():
                     self.message_manager.show("No images to move")
@@ -169,6 +188,7 @@ class SortThemApp:
                 if directory:
                     if self.image_viewer and self.image_list.move_current_image_to_subdir(directory):
                         self.load_current_image()
+                        self.update_window_title()
                         self.message_manager.show(f"Moved to '{directory}'")
                     elif self.image_list.is_empty():
                         self.message_manager.show("No images to move")
@@ -190,6 +210,7 @@ class SortThemApp:
     def _on_dialog_complete(self, letter: str, dir_name: str):
         """Callback when dialog completes"""
         self.handle_letter_action(letter, dir_name)
+        self.update_window_title()
         self.current_mode = AppMode.VIEWING
 
     def _handle_dialog_mode_keydown(self, event) -> bool:
