@@ -33,25 +33,17 @@ class SortThemApp:
         info = pygame.display.Info()
         self.screen_width = info.current_w
         self.screen_height = info.current_h
+        self.is_fullscreen = False
 
-        # Development mode: windowed; Production: fullscreen
-        import sys
-        if hasattr(sys, 'frozen'):
-            # Packaged app - use fullscreen
-            self.screen = pygame.display.set_mode(
-                (self.screen_width, self.screen_height),
-                pygame.FULLSCREEN
-            )
-        else:
-            # Development - use windowed mode
-            self.screen_width = 800
-            self.screen_height = 600
-            self.screen = pygame.display.set_mode(
-                (self.screen_width, self.screen_height)
-            )
+        # Start in windowed mode for development
+        self.screen_width = 800
+        self.screen_height = 600
+        self.screen = pygame.display.set_mode(
+            (self.screen_width, self.screen_height),
+            pygame.RESIZABLE
+        )
 
-        # Set initial window title (will be updated after loading images)
-        pygame.display.set_caption("SortThem! - get order in your image collection - Loading...")
+        pygame.display.set_caption("SortThem - Image Organizer")
         logger.info(f"Display initialized: {self.screen_width}x{self.screen_height}")
 
         # Initialize fonts
@@ -81,10 +73,72 @@ class SortThemApp:
 
         logger.info("SortThemApp initialization complete")
 
+    def toggle_fullscreen(self):
+        """Toggle between fullscreen and windowed mode"""
+        was_fullscreen = pygame.display.is_fullscreen()
+
+        if was_fullscreen:
+            # Switch to windowed mode
+            self.screen = pygame.display.set_mode(
+                (self.screen_width, self.screen_height),
+                pygame.RESIZABLE
+            )
+            logger.info("Switched to windowed mode")
+        else:
+            # Store windowed dimensions before going fullscreen
+            if not hasattr(self, 'windowed_size'):
+                self.windowed_size = (self.screen_width, self.screen_height)
+
+            # Get fullscreen dimensions
+            info = pygame.display.Info()
+            fullscreen_width = info.current_w
+            fullscreen_height = info.current_h
+
+            # Switch to fullscreen
+            self.screen = pygame.display.set_mode(
+                (fullscreen_width, fullscreen_height),
+                pygame.FULLSCREEN
+            )
+
+            # Update dimensions
+            self.screen_width = fullscreen_width
+            self.screen_height = fullscreen_height
+            logger.info(f"Switched to fullscreen mode: {self.screen_width}x{self.screen_height}")
+
+        # Update all components with new screen
+        self._update_components_for_new_screen()
+
+        # Resize existing image viewer instead of reloading
+        if self.image_viewer:
+            self.image_viewer.resize(self.screen)
+        else:
+            # Only reload if no viewer exists
+            self.load_current_image()
+
+        # Update button pressed state (may have changed due to image location)
+        current_image = self.image_list.get_current_image()
+        if current_image:
+            self.button_panel.update_pressed_state(current_image, self.image_list.base_directory)
+
+    def _update_components_for_new_screen(self):
+        """Update all components after screen size change"""
+        # Update button panel
+        self.button_panel.screen = self.screen
+        self.button_panel.screen_width, self.button_panel.screen_height = self.screen.get_size()
+        self.button_panel.create_buttons()
+
+        # Update dialog
+        self.dialog.screen = self.screen
+
+        # Update message manager
+        self.message_manager.screen = self.screen
+
+
     def load_current_image(self):
         """Load the current image into the viewer"""
         current_image = self.image_list.get_current_image()
         if current_image and current_image.exists():
+            # Create new image viewer
             self.image_viewer = ImageViewer(self.screen, str(current_image))
             self.button_panel.update_pressed_state(current_image, self.image_list.base_directory)
             self.update_window_title()
@@ -107,26 +161,56 @@ class SortThemApp:
         logger.debug(f"Window title updated: {title}")
 
     def draw_help_text(self):
-        """Draw help text at the top of the screen"""
+        """Draw help text at the top-left of the screen using multiple lines"""
         help_lines = [
-            "ESC: Exit  |  BACKSPACE: Move back to current directory  |  ← →: Navigate  |  Press assigned letter: Move to subdirectory"
+            "ESC: Exit application",
+            "F11: Toggle fullscreen mode",
+            "BACKSPACE: Move current image back to root directory",
+            "LEFT, RIGHT keys: Navigate between images",
         ]
 
+        x_offset = 20
         y_offset = 10
+        line_height = 24
+
         for line in help_lines:
             text = self.small_font.render(line, True, (255, 255, 255))
             text_rect = text.get_rect()
-            text_rect.centerx = self.screen_width // 2
-            text_rect.top = y_offset
+            text_rect.topleft = (x_offset, y_offset)
 
             # Add semi-transparent background
-            bg_rect = text_rect.inflate(20, 8)
+            bg_rect = text_rect.inflate(20, 6)
             overlay = pygame.Surface(bg_rect.size, pygame.SRCALPHA)
             overlay.fill((0, 0, 0, 180))
             self.screen.blit(overlay, bg_rect)
 
             self.screen.blit(text, text_rect)
-            y_offset += 28
+            y_offset += line_height
+
+    def draw_image_counter(self):
+        """Draw image counter and filename at top-right corner"""
+        if self.image_list.is_empty():
+            return
+
+        current_image = self.image_list.get_current_image()
+        filename = current_image.name if current_image else ""
+
+        # Truncate long filenames
+        max_filename_len = 40
+        if len(filename) > max_filename_len:
+            filename = filename[:max_filename_len-3] + "..."
+
+        info_text = f"{self.image_list.get_index_info()}  |  {filename}"
+        info_surface = self.small_font.render(info_text, True, (255, 255, 255))
+        info_rect = info_surface.get_rect()
+        info_rect.topright = (self.screen_width - 20, 10)
+
+        # Add semi-transparent background
+        bg_rect = info_rect.inflate(20, 10)
+        overlay = pygame.Surface(bg_rect.size, pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 180))
+        self.screen.blit(overlay, bg_rect)
+        self.screen.blit(info_surface, info_rect)
 
     def draw_instruction_below_keyboard(self):
         """Draw instruction text below the keyboard"""
@@ -175,6 +259,10 @@ class SortThemApp:
         if event.key == pygame.K_ESCAPE:
             logger.info("Escape pressed, exiting")
             return False  # Signal to exit
+
+        elif event.key == pygame.K_F11:
+            logger.info("F11 pressed, toggling fullscreen")
+            self.toggle_fullscreen()
 
         elif event.key == pygame.K_LEFT:
             new_image = self.image_list.previous_image()
@@ -290,6 +378,18 @@ class SortThemApp:
                     running = False
                     break
 
+                # Handle window resize events (when in windowed mode)
+                elif event.type == pygame.VIDEORESIZE:
+                    if not pygame.display.is_fullscreen():
+                        self.screen_width, self.screen_height = event.w, event.h
+                        self.screen = pygame.display.set_mode(
+                            (self.screen_width, self.screen_height),
+                            pygame.RESIZABLE
+                        )
+                        self._update_components_for_new_screen()
+                        self.load_current_image()
+                        logger.info(f"Window resized to: {self.screen_width}x{self.screen_height}")
+
                 # Delegate based on current mode
                 if event.type == pygame.KEYDOWN:
                     if self.current_mode == AppMode.VIEWING:
@@ -325,23 +425,10 @@ class SortThemApp:
             elif self.image_viewer:
                 self.image_viewer.draw()
 
-            # Draw help text at top
-            self.draw_help_text()
-
-            # Draw image counter (top left, below help text)
-            if not self.image_list.is_empty():
-                counter_text = self.small_font.render(self.image_list.get_index_info(),
-                                                     True, (255, 255, 255))
-                counter_rect = counter_text.get_rect()
-                counter_rect.topleft = (10, 45)  # Moved down to not overlap help text
-                bg_rect = counter_rect.inflate(20, 10)
-                overlay = pygame.Surface(bg_rect.size, pygame.SRCALPHA)
-                overlay.fill((0, 0, 0, 180))
-                self.screen.blit(overlay, bg_rect)
-                self.screen.blit(counter_text, counter_rect)
-
-            # Draw button panel (keyboard at bottom)
-            self.button_panel.draw()
+            # Draw UI elements
+            self.draw_help_text()           # Help text at top-left
+            self.draw_image_counter()       # Counter at top-right
+            self.button_panel.draw()        # Keyboard at bottom
 
             # Draw instruction below keyboard
             self.draw_instruction_below_keyboard()

@@ -26,20 +26,22 @@ pip install -r requirements.txt
 
 2. Run the application:
 ```bash
-python main.py
+./run.sh
 ```
 
 ## Usage
 
+    ESC: Exit application
+
+    F11: Toggle fullscreen mode
+
     Arrow Keys: Navigate between images
+
+    Mouse Wheel: Zoom in/out on image
 
     Letter Keys: Move current image to bound directory (or create new binding)
 
     Backspace: Move current image back to root directory
-
-    Mouse Wheel: Zoom in/out on image
-
-    ESC: Exit application
 
 ## Configuration
 
@@ -62,4 +64,3 @@ SortThem-App/
 ## License
 
 MIT License
-
