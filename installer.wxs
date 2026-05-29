@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Id="*"
+           Name="SortThem"
+           Version="1.0.0"
+           Manufacturer="SortThem"
+           UpgradeCode="25afc0f2-c55d-439d-a015-2d32e7cd1322">
+
+    <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine"/>
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version is already installed."/>
+    <MediaTemplate EmbedCab="yes"/>
+
+    <!-- Install directory -->
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFiles64Folder">
+        <Directory Id="INSTALLFOLDER" Name="SortThem"/>
+      </Directory>
+      <Directory Id="ProgramMenuFolder">
+        <Directory Id="ApplicationProgramsFolder" Name="SortThem"/>
+      </Directory>
+      <Directory Id="DesktopFolder" Name="Desktop"/>
+    </Directory>
+
+    <!-- Files to install -->
+    <DirectoryRef Id="INSTALLFOLDER">
+      <Component Id="MainExecutable" Guid="*">
+        <File Id="SortThemExe" Source="dist\SortThem.exe" KeyPath="yes"/>
+      </Component>
+    </DirectoryRef>
+
+    <!-- Start menu shortcut -->
+    <DirectoryRef Id="ApplicationProgramsFolder">
+      <Component Id="ApplicationShortcut" Guid="*">
+        <Shortcut Id="ApplicationStartMenuShortcut"
+                  Name="SortThem"
+                  Description="SortThem - Image Organizer"
+                  Target="[INSTALLFOLDER]SortThem.exe"
+                  WorkingDirectory="INSTALLFOLDER"/>
+        <RemoveFolder Id="ApplicationProgramsFolder" On="uninstall"/>
+        <RegistryValue Root="HKCU" Key="Software\SortThem" Name="installed" Type="integer" Value="1" KeyPath="yes"/>
+      </Component>
+    </DirectoryRef>
+
+    <!-- Desktop shortcut -->
+    <DirectoryRef Id="DesktopFolder">
+      <Component Id="DesktopShortcut" Guid="*">
+        <Shortcut Id="ApplicationDesktopShortcut"
+                  Name="SortThem"
+                  Description="SortThem - Image Organizer"
+                  Target="[INSTALLFOLDER]SortThem.exe"
+                  WorkingDirectory="INSTALLFOLDER"/>
+        <RegistryValue Root="HKCU" Key="Software\SortThem" Name="desktop_shortcut" Type="integer" Value="1" KeyPath="yes"/>
+      </Component>
+    </DirectoryRef>
+
+    <!-- Features -->
+    <Feature Id="MainApplication" Title="SortThem" Level="1">
+      <ComponentRef Id="MainExecutable"/>
+      <ComponentRef Id="ApplicationShortcut"/>
+      <ComponentRef Id="DesktopShortcut"/>
+    </Feature>
+
+    <!-- Install sequence -->
+    <InstallExecuteSequence>
+      <RemoveShortcuts>Installed</RemoveShortcuts>
+      <CreateShortcuts>Installed</CreateShortcuts>
+    </InstallExecuteSequence>
+
+    <!-- UI -->
+    <UIRef Id="WixUI_InstallDir"/>
+    <UIRef Id="WixUI_ErrorProgressText"/>
+
+    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER"/>
+    <Property Id="ARPPRODUCTICON" Value="SortThemExe"/>
+  </Product>
+</Wix>
