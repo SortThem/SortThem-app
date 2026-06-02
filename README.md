@@ -54,12 +54,14 @@ Key bindings are automatically saved to:
 
 ## Project Structure
 
+```
 SortThem-App/
 ├── main.py              # Entry point
 ├── app/                 # Application core
 ├── core/                # Core functionality
 ├── ui/                  # UI components
 └── utils/               # Utilities
+```
 
 ## License
 
